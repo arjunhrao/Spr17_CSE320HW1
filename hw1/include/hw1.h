@@ -18,7 +18,10 @@
  * @return Refer to homework document for the return value of this function.
  */
 char validargs(int argc, char **argv, FILE **in, FILE **out);
-
+int encr_sc(FILE* in, FILE* out, char n);
+int decr_sc(FILE* in, FILE* out, char n);
+int encr_t(FILE* in, FILE* out);
+int decr_t(FILE* in, FILE* out);
 
 #define USAGE(retcode) do{                                                        \
 fprintf(stderr, "%s\n",                                                           \

@@ -1,4 +1,6 @@
 #include "hw1.h"
+#include "debug.h"
+
 
 // For your helper functions (you may add additional files also)
 // DO NOT define a main function here!
@@ -26,6 +28,8 @@ int mystrln(const char *aptr) {
 	}
 	return i;
 }
+
+
 
 char validargs(int argc, char** argv, FILE** in, FILE** out) {
 	char ret = 0;
@@ -72,9 +76,9 @@ char validargs(int argc, char** argv, FILE** in, FILE** out) {
 	else return 0; // if it's not h or s or t, return 0
 
 	ptr++;
-	if (mystrcmp(*ptr, "-e") == 0)
+	if (mystrcmp(*ptr, "-d") == 0)
 		ret = ret | 32; //or with 00100000
-	else if (mystrcmp(*ptr, "-d") == 0)
+	else if (mystrcmp(*ptr, "-e") == 0)
 		ret = ret & 223; //and with 11011111
 	else return 0; //if it's not d or e, return 0 (invalid)
 
@@ -143,6 +147,8 @@ char validargs(int argc, char** argv, FILE** in, FILE** out) {
 	return ret;
 }
 
+
+
 int encr_sc(FILE* in, FILE* out, char n) {//n is a char from 0-31 that is our offset, or key
 	//we still have alphaLen, a global variable, from passing into validargs.
 	//but i'm not entirely sure if it will stay, and recalculating it is just a line so..
@@ -188,11 +194,220 @@ int encr_sc(FILE* in, FILE* out, char n) {//n is a char from 0-31 that is our of
 	}
 	fclose(in);
 	fclose(out);
-	printf("%c", 'Q');
 	return 1;
 
 }
+
+
 
 int decr_sc(FILE* in, FILE* out, char n) {
+	char* alpha_ptr = Alphabet;
+	char* alpha_ptr2 = Alphabet;
+	char* temp_ptr;
+	int aLen = mystrln(alpha_ptr);
+	//note also that if we get here, our input file was valid.
+	int c;
+	//int resu;
+	int counter = 0;
+	while ((c = fgetc(in)) != EOF) {
+		alpha_ptr = Alphabet;//reset ptr
+		alpha_ptr2 = Alphabet;
+
+		if ((c > 96) && (c < 123))
+			c = c - 32;//make uppercase
+		//for each char: encrypt, and then write to out file
+		//find c's place in the alphabet
+		for (; counter < aLen; counter++) {
+			if (*alpha_ptr==c)
+				break;
+			alpha_ptr++;
+		}
+		counter = 0;//reset counter
+		//when we reach here, alpha_ptr should be on the right letter, unless
+		//it's not in the alphabet in which case it will be on '\0'
+		if (*alpha_ptr == '\0') {
+			//then we just encrypt the same letter
+			fprintf(out, "%c", c);
+		}
+		else { //alpha_ptr is on the right letter.
+			temp_ptr = alpha_ptr - n; //this is where it should be encrypted to unless it needs to carry around
+			//printf("%d", aLen);//printf("%c", *temp_ptr);//printf("%s", temp_ptr);
+			if ( (alpha_ptr2 - temp_ptr) > (0)) {//if the ptr goes before the beginning
+				temp_ptr = temp_ptr + aLen;//then carry around (subtract len of alphabet for desired address)
+			}
+			fprintf(out, "%c", *temp_ptr);//now write the result
+		}
+
+	}
+	fclose(in);
+	fclose(out);
 	return 1;
 }
+
+
+
+
+
+int tut_str(int c, char** tutptr, FILE* in, FILE* out, int doubLet) {
+
+	int caps = 0;
+	if ((c >= 65) && (c <= 90)) {
+		caps = 1;
+		c = c + 32; //make lowercase
+	}
+
+	while (*tutptr != NULL) { //while the char* to the string we examine is not null
+
+
+		if (c == **tutptr) {//check if starting char is the one we want
+			//if caps, print out string from 1 past the first char after printing out the caps char
+			if (caps == 1) {
+				fprintf(out, "%c", (c = c-32));
+				fprintf(out, "%s", ( (*tutptr)+1)  );
+			}
+			else {
+				fprintf(out, "%s", *tutptr);//write the corresponding string
+			}
+
+			return 1;
+		}
+		tutptr++; //go to next string / column
+		//debug("\ngot past: %s \t", *tutptr);
+	}
+	//debug("\nnot in tutnese array: %d \t", c);
+
+	//reach here --> char not found. But we must've had an alphabetical char coming in, so it's not in
+	//the tutnese array (it's a vowel or unmapped cons). This means we just print the char itself.
+	//unless it's a vowel and from a double-letter, in which case we also print a "t" to end squa.
+
+	if (doubLet == 1) {//note: c is the lowercase version here no matter what.
+		if (c == 97 || c == 101 || c == 105 || c == 111 || c == 117)
+			fprintf(out, "%s", "t");
+	}
+
+
+	if (caps == 1) {		//note: checking caps so that we can print what case c originally was.
+		fprintf(out, "%c", (c = c-32));
+	}
+	else {
+		fprintf(out, "%c", (c));
+	}
+
+	return 0;
+}
+
+
+
+
+int check_pair(int* charptr, char** tutptr, FILE* in, FILE* out) {//preconditions: list them
+	//check null terminating chars cases (should be c++ normally, just c for doubles at end if did 2x++)
+	int c = *charptr;
+	int d = fgetc(in); //next char
+	//debug("\nit's c: %d \t", c);
+	//debug("\nit's d: %d \t", d);
+
+	if (c == '\0')	//don't think this is necessary bc the above while loop should end it
+		return d;			//but oh well, doesn't hurt
+	else if (d == '\0') {
+		tut_str(c, tutptr, in, out, 0); //print out c and return
+	}
+
+
+
+	int capsc = 0; int capsd = 0;
+
+	if ( (c >= 65) && (c <= 90) ) {
+		capsc = 1;
+		//debug("\nC IS CAPS: %d \t", c);
+		c = c + 32; //make lowercase
+	}
+	if ( (d >= 65) && (d <= 90) ) {
+		capsd = 1;
+		d = d + 32; //make lowercase
+	}
+
+
+	if (c != d)	{//compare c and the character after it
+		//if the chars aren't the same, print the first one in tutnese
+		if (capsc == 1)
+			c = c - 32;//make uppercase again
+		if (capsd == 1)
+			d = d - 32;//make uppercase again
+		tut_str(c, tutptr, in, out, 0); //after this, will automatically go to next while iteration
+	}
+	else {//they're equivalent. Check for cases.
+		if (capsc == 1)
+			fprintf(out, "%s", "Squa" );
+		else
+			fprintf(out, "%s", "squa" );
+
+		if (capsc == 1)
+			c = c - 32;
+		//now print the tut_str for d.
+		if (capsd == 1)
+			d = d - 32; //makes uppercase again if it was, so tut_str can figure out if it's caps.
+		tut_str(d, tutptr, in, out, 1);
+
+		//if chars are the same, increment charptr? no, read in another character since you looked at
+		//and used the immediately next one.
+		d = fgetc(in); //moves up one
+		return d;
+	}
+	return d;
+
+}
+
+
+
+
+
+int encr_t(FILE* in, FILE* out) {
+
+
+	int c;
+	char** tutptr;
+	int* charptr; //ik this name sucks bc c is an int but just understand that.
+	int isLetter;
+	//int isCaps;
+	//int prev_double;	//1 if we care about the previous char
+	c = fgetc(in);
+
+	while (c != EOF) {
+		//debug("\nencr value c: %d \t", c);
+
+		isLetter = 0;
+		//isCaps = 0;
+
+		tutptr = Tutnese;
+		charptr = &c;
+		//if the char is not in the alphabet, we simply print the char and go on to the next one
+		if ((c >= 97) && (c <= 122)) {
+			isLetter = 1; //isCaps = 0;
+		}
+		else if ((c >= 65) && (c <= 90)) {
+			isLetter = 1; //isCaps = 1;
+		}
+
+		if (!isLetter) {
+			//debug("\nnot letter c: %d \t", c);
+			fprintf(out, "%c", c);//if it's not a letter, just print it.
+			//break; //break iteration of while loop, it'll go back up and try next char
+			c = fgetc(in);
+		}
+		else {
+			//debug("\nyes letter c: %d \t", c);
+			//parse input 2 chars at a time. For a pair, if the letters differ, print the first in the pair?
+			//also will need to deal with null terminator being the latter in a pair...
+			c = check_pair(charptr, tutptr, in, out);//check pair of chars starting at given pointer
+		}
+
+	}
+
+	return 1;
+}
+
+int decr_t(FILE* in, FILE* out) {
+	return 1;
+}
+
+
