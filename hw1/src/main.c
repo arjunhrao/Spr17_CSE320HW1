@@ -6,6 +6,7 @@ int main(int argc, char **argv) {
 
     FILE* in;
     FILE* out;
+    int op = 0;
 
     //debug("Program has %d args\n", argc);
 
@@ -31,12 +32,14 @@ int main(int argc, char **argv) {
 
         if ( (mode & 32) == 32) {//then encrypt
             succ = decr_sc(in, out, n);
+            op = 1;
             //print out shifted alphabet to stderr using info call
             //info("\nshifted alphabet: %s%s", infoaLen - n;
             //succ = decr_sc(aptr, stderr, )
         }
         else { //decrypt
             succ = encr_sc(in, out, n);
+            op = 2;
         }
 
         /*
@@ -50,7 +53,16 @@ int main(int argc, char **argv) {
         //info(argc, argv);
 
         //info("\nshifted alphabet: %s", );
-        //info("\nshift amount: %d", n);
+        //info("\nshift amount: %d", n");
+        info("\nshift amount: %d", n);
+        info("\ninput file: %s", *(argv+3));
+        info("\noutput file: %s", *(argv+4));
+        if (op == 1)
+            info("\noperation: %s", "decryption");
+        else if (op == 2)
+            info("\noperation: %s", "encryption");
+
+
         //info("Program has %d args\n", argc);
 
 

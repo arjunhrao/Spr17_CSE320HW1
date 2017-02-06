@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #ifdef INFO
-	#define info(fmt, ...) do{fprintf(stderr, "INFO: %s:%s:%d " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);}while(0)
+	#define info(fmt, ...) do{fprintf(stderr, fmt, ##__VA_ARGS__);}while(0)
 #else
 	#define info(fmt, ...)
 #endif
