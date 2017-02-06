@@ -26,6 +26,8 @@ int mystrln(const char *aptr) {
 	for (; *aptr != '\0'; aptr++) {
 				i++;
 	}
+	aptr = aptr-i;
+
 	return i;
 }
 
@@ -367,7 +369,7 @@ int encr_t(FILE* in, FILE* out) {
 	int c;
 	char** tutptr;
 	int* charptr; //ik this name sucks bc c is an int but just understand that.
-	int isLetter;
+	int isLetter = 0;
 	//int isCaps;
 	//int prev_double;	//1 if we care about the previous char
 	c = fgetc(in);
@@ -388,7 +390,7 @@ int encr_t(FILE* in, FILE* out) {
 			isLetter = 1; //isCaps = 1;
 		}
 
-		if (!isLetter) {
+		if (isLetter == 0) {
 			//debug("\nnot letter c: %d \t", c);
 			fprintf(out, "%c", c);//if it's not a letter, just print it.
 			//break; //break iteration of while loop, it'll go back up and try next char
@@ -406,8 +408,258 @@ int encr_t(FILE* in, FILE* out) {
 	return 1;
 }
 
+
+
+
+int check_in_tut(int* charptr, char** tutptr, FILE* in, FILE* out) {
+	int c = *charptr;
+	//int d = fgetc(in);
+	int caps = 0;
+	int tem = 0;
+	int z = 0;
+	int getc = 0;
+	int getc1 = 0;
+	int getc2 = 0;
+	int getc3 = 0;
+	int getc4 = 0;
+	int whileiter = 0; //num times we go through the while loop
+	//int getc5 = 0;
+	//int isLetter = 0;
+
+	if ( (c >= 65) && (c <= 90) ) {
+		caps = 1;
+		//debug("\nC IS CAPS: %d \t", c);
+		c = c + 32; //make lowercase
+	}
+
+	tutptr = Tutnese;
+	while (*tutptr != NULL) { //while the char* to the string we examine is not null
+		//tutptr = tutptr - whileiter;
+		whileiter++;
+		//debug("\nan iter of strs: %d \t", c);
+		debug("at string: %c \t", **tutptr);
+
+		if (c == **tutptr) {//check if starting char is the one we want. If it is, we iterate through
+			//to see if the input file matches the syllable.
+			getc = c;
+			tem = 0;
+			z = mystrln(*tutptr);
+			debug("\nz is: %d \t", z);
+			int m = 0;
+			for (; tem < z; tem++ ) {
+				(*tutptr) = (*tutptr) + m;
+				if (**tutptr == getc) {
+					(*tutptr) = (*tutptr) - m;
+					m++;
+
+					//(*tutptr)++;		m++;
+					getc = fgetc(in);
+					debug("\none iter of chars: %d \t", c);
+				}
+				else {//failure unless s
+					if (c != 's')	//should still be lowercase
+						return 127;
+					else {//c is s. Since we found a corresponding syllable for s, this means that
+						//getc = fgetc(in);
+						(*tutptr)--;
+						if (getc != 'q')
+							return 127;
+						getc = fgetc(in);
+						if (getc != 'u')
+							return 127;
+						getc = fgetc(in);
+						if (getc != 'a')
+							return 127;
+						//if we get here, then we know it's squa or squat.
+						getc = fgetc(in);
+						if (getc == 't'){ //double vowel
+							getc = fgetc(in); //getc is the vowel we want to print
+
+							if (caps == 1) {//the case should be the same as that of the S though
+								if  ( (getc >= 65) && (getc <= 90) ) {
+									c = getc; //uppercase version of second vowel
+								} else { //double is uppercase, lowercase
+									c = getc - 32; //get uppercase
+								}
+							}
+
+							else {//first caps == false --> it's lowercase
+								if  ( (getc >= 65) && (getc <= 90) ) {
+									c = getc + 32; //lowercase version of second vowel
+								} else {
+									c = getc; //both lowercase
+								}
+							}
+							fprintf(out, "%c", c);
+							return getc;//return getc so the second vowel gets printed after.
+
+						}//remember, all this happened with s being mapped to smth.
+						else {//success, but only if squa is followed by a consonant.
+							//we already know it is a letter.
+							if ( !(getc == 'a' || getc == 'e' || getc == 'i' || getc == 'o' || getc == 'u'
+								|| getc == 'A' || getc == 'E' || getc == 'I' || getc == 'O' || getc == 'U') ) {
+
+								if (caps == 1) {
+									if  ( (getc >= 65) && (getc <= 90) ) {
+										c = getc; //uppercase version of second vowel
+									} else { //double is uppercase, lowercase
+										c = getc - 32; //get uppercase
+									}
+								}
+
+								else {//first caps == false --> it's lowercase
+									if  ( (getc >= 65) && (getc <= 90) ) {
+										c = getc + 32; //lowercase version of second vowel
+									} else {
+										c = getc; //both lowercase
+									}
+								}
+								fprintf(out, "%c", c);
+								return getc;
+							}
+							else //is a vowel
+								return 127;
+						}
+					}
+				}
+
+			}
+			//if we get past the for loop, then they were equivalent.
+			//(*tutptr) = *tutptr - m;
+
+			if (caps == 1) {
+				fprintf(out, "%c", (c = c-32));
+			} else {
+				fprintf(out, "%c", c);//write the corresponding string
+			}
+			return getc;//(getc = fgetc(in)); //want to return just getc since it's already past the
+			//string syllable.
+		}
+		tutptr++; //go to next string / column
+		//debug("\ngot past: %s \t", *tutptr);
+	}
+	//tutptr = tutptr - whileiter;
+	//if we make it past the while loop, then the char, which is a letter, was unmapped.
+	//IT COULD be an s, so check for squa / squat. If it's not squa or squat, just print
+	//the char s and go back to one after it in getc's using the buffer and ungetc perhaps.
+	getc1 = fgetc(in);
+	if (getc1 == 'q') {
+		getc2 = fgetc(in);
+		if (getc2 == 'u'){
+			getc3 = fgetc(in);
+			if (getc3 == 'a') {
+				getc = fgetc(in);
+				if (getc == 't' || getc == 'T'){ //double vowel
+					getc4 = fgetc(in); //getc is the vowel we want to print
+					if (caps == 1) {//the case should be the same as that of the S though
+						if  ( (getc4 >= 65) && (getc4 <= 90) ) {
+							c = getc4; //uppercase version of second vowel
+						} else { //double is uppercase, lowercase
+							c = getc4 - 32; //get uppercase
+						}
+					}
+
+					else {//first caps == false --> it's lowercase
+						if  ( (getc4 >= 65) && (getc4 <= 90) ) {
+							c = getc4 + 32; //lowercase version of second vowel
+						} else {
+							c = getc4; //both lowercase
+						}
+					}
+					fprintf(out, "%c", c);
+					return getc4;//return getc so the second vowel gets printed after.
+				}
+				else {//success, but only if squa is followed by a consonant.
+					//we already know it is a letter.		getc is still what it needs to be
+					if ( !(getc == 'a' || getc == 'e' || getc == 'i' || getc == 'o' || getc == 'u'
+						|| getc == 'A' || getc == 'E' || getc == 'I' || getc == 'O' || getc == 'U') ) {
+
+						if (caps == 1) {
+							if  ( (getc >= 65) && (getc <= 90) ) {
+								c = getc; //uppercase version of second vowel
+							} else { //double is uppercase, lowercase
+								c = getc - 32; //get uppercase
+							}
+						}
+
+						else {//first caps == false --> it's lowercase
+							if  ( (getc >= 65) && (getc <= 90) ) {
+								c = getc + 32; //lowercase version of second vowel
+							} else {
+								c = getc; //both lowercase
+							}
+						}
+						fprintf(out, "%c", c);
+						return getc;
+					}
+					else //is a vowel. Put back the vowel. we just print the s or S and move on.
+						//remember to restore / unget chars.
+						ungetc(getc, in);
+				}//if we didn't return, then we had to put it all back.
+			}
+			else
+				ungetc(getc3, in);
+		}
+		else
+			ungetc(getc2, in);
+
+	}
+	else	//potentially: the next one wasn't q. put it back and let's just print the s
+		ungetc(getc1, in);
+
+	//print the curr char
+	if (caps == 1) {
+		fprintf(out, "%c", (c = c-32));
+	} else {
+		fprintf(out, "%c", c);//write the corresponding string
+	}
+	return ( getc = fgetc(in) ); //return the next char
+
+}
+
+
+
+
 int decr_t(FILE* in, FILE* out) {
+
+	int c;
+	char** tutptr;
+	int* charptr; //ik this name sucks bc c is an int but just understand that.
+	int isLetter = 0;
+	//int isCaps;
+	//int prev_double;	//1 if we care about the previous char
+	c = fgetc(in);
+	while (c!= EOF) {
+		charptr = &c;
+		//if c is a char used in the tutnese array, then we iterate through and compare
+		//to make sure they are the same. Let's check if c is in the array.
+		tutptr = Tutnese;
+		isLetter = 0;
+
+		if ((c >= 97) && (c <= 122)) {
+			isLetter = 1; //isCaps = 0;
+		}
+		else if ((c >= 65) && (c <= 90)) {
+			isLetter = 1; //isCaps = 1;
+		}
+
+		if (isLetter == 0) {
+			//debug("\nnot letter c: %d \t", c);
+			fprintf(out, "%c", c);//if it's not a letter, just print it.
+			c = fgetc(in);
+		}
+		else { //if it is a letter, we check if it's in the tutnese array.
+			debug("\nis letter: %d \t", c);
+			c = check_in_tut(charptr, tutptr, in, out);//check pair of chars starting at given pointer
+			debug("\npost check, is letter: %d \t", c);
+			if (c == 127) //returned in the case of error decrypting
+				return 127;
+			//if not, then it was valid and printed and c is where it should be now.
+		}
+	}
+
 	return 1;
 }
+
 
 

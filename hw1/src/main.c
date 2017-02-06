@@ -12,12 +12,14 @@ int main(int argc, char **argv) {
     /* Note: create a variable to assign the result of validargs */
     char mode = validargs(argc, argv, &in, &out); //int or char?
     int succ = 0;
+
+    //debug("\n mode is: %d \t", mode);
     if (mode == 0) {
-    	USAGE(mode);
+    	USAGE(EXIT_FAILURE);
     	return EXIT_FAILURE;
     }
     else if ( (mode & 128) == 128) { //help
-        USAGE(mode);
+        USAGE(EXIT_SUCCESS);
         return EXIT_SUCCESS;
     }
     else if ( (mode & 64) == 64) {//if and with 01000000 = 32, then -s --> sub cipher
@@ -48,7 +50,7 @@ int main(int argc, char **argv) {
         //info(argc, argv);
 
         //info("\nshifted alphabet: %s", );
-        info("\nshift amount: %d", n);
+        //info("\nshift amount: %d", n);
         //info("Program has %d args\n", argc);
 
 
@@ -56,6 +58,8 @@ int main(int argc, char **argv) {
     else { //-t --> tutneseUSAGE(mode);
         if ( (mode & 32) == 32) {//then encrypt
             succ = decr_t(in, out);
+            if (succ == 127)
+                return EXIT_FAILURE;
         }
         else { //decrypt
             succ = encr_t(in, out);
@@ -66,8 +70,8 @@ int main(int argc, char **argv) {
 
 
 
-
-    if (succ)
+    debug("\n mode is: %d \t", mode);
+    if (succ == 1)
         return EXIT_SUCCESS;
     return EXIT_SUCCESS;
 
